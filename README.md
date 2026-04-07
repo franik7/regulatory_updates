@@ -46,7 +46,7 @@ Telegram Error Alerts (real-time)
 
 ## 🏛️ Regulatory Sources
 
-The platform monitors **9 major U.S. regulatory bodies**, covering both news and speeches where applicable:
+The platform monitors **8 major U.S. regulatory bodies**, covering both news and speeches where applicable:
 
 | Source | Type | Collection Method |
 |--------|------|-------------------|
