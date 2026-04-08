@@ -468,7 +468,7 @@ services:
     image: n8nio/n8n
     restart: always
     ports:
-      - "5678:5678"
+      - "xxxx:xxxx"
     environment:
       - GENERIC_TIMEZONE=America/New_York
       - N8N_SECURE_COOKIE=false
@@ -483,9 +483,9 @@ volumes:
 docker-compose up -d
 ```
 
-6. **Open firewall port 5678** in Oracle Security Lists
+6. **Open firewall port XXXX** in Oracle Security Lists
 
-7. **Access n8n** at `http://YOUR_IP:5678`
+7. **Access n8n** at `http://YOUR_IP:XXXX`
 
 8. **Import workflows** and configure credentials:
    - Supabase (URL + service role key)
@@ -555,7 +555,7 @@ docker-compose up -d
 
 - ✅ **TOTALLY FREE** — entire stack runs on free tiers permanently
 - ✅ **Fully automated** — runs every morning without human intervention
-- ✅ **9 regulatory sources** — comprehensive U.S. financial regulator coverage
+- ✅ **8 regulatory sources** — comprehensive U.S. financial regulator coverage
 - ✅ **AI-powered** — automatic classification and plain-English summaries
 - ✅ **Duplicate-free** — built-in deduplication prevents redundant data
 - ✅ **Fault-tolerant** — dual AI providers + error alerts + auto-restart
@@ -569,7 +569,7 @@ docker-compose up -d
 
 As of early 2026:
 - **130+ articles** collected and processed
-- Growing daily across all 9 regulatory sources
+- Growing daily across all 8 regulatory sources
 - All stored in Supabase with full text, AI summaries, and categories
 
 ---
@@ -589,7 +589,7 @@ As of early 2026:
 
 This platform continuously monitors all major U.S. financial regulators, automatically collects and AI-processes regulatory updates every morning, and routes them through a structured compliance review workflow. Analysts (Doers) review AI-summarized articles and make initial decisions; Reviewers validate those decisions. Every action is permanently stored for audit purposes.
 
-The system eliminates hours of daily manual monitoring, ensures nothing is missed across 9 regulatory sources, and provides a clear audit trail of all compliance decisions — at zero cost.
+The system eliminates hours of daily manual monitoring, ensures nothing is missed across 8 regulatory sources, and provides a clear audit trail of all compliance decisions — at zero cost.
 
 ---
 
