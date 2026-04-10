@@ -16,7 +16,7 @@ This platform **fully automates** the collection, AI-processing, and structured 
 
 The system runs **completely automatically**, every morning before business hours, and routes processed data through a structured compliance review workflow with defined user roles.
 
-> **💰 Cost: $0. The entire stack runs on free tiers — permanently.**
+> **💰 Cost: $0 under current free-tier limits. The system is designed to operate entirely within free tiers, though higher volume or API usage may require upgrades.**
 
 ---
 
@@ -216,13 +216,37 @@ Respond ONLY as valid JSON: {"category": "...", "summary": "..."}
 
 ---
 
+## ⚠️ Failure Handling
+
+The system is designed to fail safely and visibly:
+
+- Duplicate articles → skipped automatically  
+- AI failures → fallback provider is triggered  
+- Source errors → workflow fails and sends Telegram alert  
+- Parsing failures → article is skipped (no partial data stored)  
+
+A global error workflow ensures **no silent failures**.
+
+---
+
 ### 🔹 Telegram — Error Monitoring
 A dedicated n8n error handler workflow sends real-time alerts to a Telegram bot whenever any workflow fails, including:
 - Which workflow failed
 - Which node failed
 - The error message
 
-This eliminates silent failures and removes the need to manually check execution logs.
+This ensures failures are immediately visible and actionable.
+
+---
+
+## ⚠️ Known Limitations
+
+- URL-based deduplication assumes one URL per unique article  
+- HTML parsing depends on regulator website structure (can break if layout changes)  
+- FFIEC relies on Tavily search rather than direct scraping  
+- AI classification is not deterministic and requires human validation  
+
+These are acceptable trade-offs for a lightweight, free-tier system.
 
 ---
 
@@ -279,7 +303,6 @@ Save to Supabase
 **Trigger:** 5:05 AM ET daily
 **Source:** `https://www.fdic.gov/news/press-releases?year={current_year}`
 **Method:** Same pattern as FDIC Speeches but targets the press releases section
-**Key difference:** URL includes antibot key parameters that must be included in the request
 
 ---
 
@@ -364,22 +387,14 @@ Save to Supabase
 
 ## 🔁 Deduplication Logic
 
-Every workflow checks Supabase before processing any article:
+The system uses a **two-layer deduplication strategy**:
 
-```javascript
-const response = await this.helpers.httpRequest({
-  method: 'GET',
-  url: `https://[project].supabase.co/rest/v1/items?select=url&url=eq.${url}`,
-  headers: { 'apikey': '[anon_key]' }
-});
+1. **Pre-processing deduplication (workflow level)**  
+   Each workflow checks whether an article URL already exists before sending it to AI.  
+   This prevents unnecessary API calls and reduces token usage.
 
-if (Array.isArray(response) && response.length === 0) {
-  // New article — process it
-}
-// Existing article — skip silently
-```
-
-Only articles with URLs **not already in the database** are processed further. This prevents duplicate AI calls and database entries.
+2. **Database-level protection (Supabase)**  
+   The `url` field is enforced as unique, ensuring no duplicate records are ever stored, even if multiple workflows run concurrently.
 
 ---
 
@@ -534,18 +549,6 @@ sudo nano /etc/systemd/journald.conf
 # RuntimeMaxUse=50M
 sudo systemctl restart systemd-journald
 ```
-
-**Verify RAM savings:**
-```bash
-free -h
-```
-Expected result after all optimizations:
-```
-               total    used    free    available
-Mem:           956Mi   283Mi   200Mi      522Mi
-Swap:          4.0Gi      0B   4.0Gi
-```
-Result: ~260MB freed, swap usage dropped from 352MB to 0.
 
 > **Important — do NOT limit Node.js memory:** Adding `--max-old-space-size` flags to cap n8n's memory causes workflow crashes instead of graceful degradation. The 4GB swap file already handles memory overflow safely — this is the correct approach.
 
