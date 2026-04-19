@@ -201,17 +201,11 @@ That's the complete config. Caddy handles SSL issuance, renewal, and proxying au
    - Industry News & Trends
 2. Writes a 2-sentence plain-English summary for compliance officers
 
-**Prompt structure:**
+**Enhanced AI Classification Prompt v2:**
 ```
-Classify this article into exactly ONE of these categories:
-- BSA/AML/KYC Fines & Enforcement
-- Regulatory Updates
-- Regulator Speeches & Testimony
-- Industry News & Trends
+Rewrote the n8n classification prompt with explicit decision rules, keyword anchors, and a priority hierarchy to reduce misclassification. Added a KEY TEST heuristic ("Does this article tell a compliance officer they must do something new?") to better distinguish true regulatory updates from program announcements, statistics, and industry news.
 
-Also write a 2-sentence plain-English summary for a compliance officer.
-
-Respond ONLY as valid JSON: {"category": "...", "summary": "..."}
+Manual reclassification — users can now correct AI-assigned categories from the UI; original AI classification is retained in the database for audit purposes and flagged visually in the review queue
 ```
 
 ---
