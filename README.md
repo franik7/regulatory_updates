@@ -1,5 +1,7 @@
-# 📊 Regulatory Updates AI Platform
-### BSA / AML / KYC / ABC / Fraud & Regulatory Intelligence System
+# RegWave
+**Regulatory Intelligence Platform for Financial Services Compliance**
+RegWave aggregates, classifies, and summarizes regulatory updates from major US regulators — 
+helping compliance teams stay current without manually monitoring dozens of sources.
 
 ---
 
