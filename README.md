@@ -173,7 +173,7 @@ The platform monitors **8 major U.S. regulatory agencies** across **9 automated 
 
 **Primary:** Groq API — `meta-llama/llama-4-scout-17b-16e-instruct`
 - Fast inference, free tier with generous limits
-- Primary model for all 10 workflows
+- Primary model for all 8 workflows
 
 **Fallback:** OpenRouter — `google/gemini-2.0-flash-lite-001`
 - Activates automatically if Groq hits rate limits
