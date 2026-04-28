@@ -2,7 +2,7 @@
 **Regulatory Intelligence Platform for Financial Services Compliance**
 
 RegWave aggregates, classifies, and summarizes regulatory updates from major US regulators — 
-helping compliance teams stay current without manually monitoring government of sources.
+helping compliance teams stay current without manually monitoring sources.
 
 ---
 
@@ -307,7 +307,7 @@ For each of the regulatory categories, the Doer must make a decision. The system
 
 ### Features:
 - Multi-user login with role-based access
-- Dashboard styled
+- Dashboard style
 - Article list with category badges and AI summaries
 - Per-article decision panel (Approve / Decline / Unsure buttons)
 - Notes field per article
