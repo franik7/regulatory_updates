@@ -225,7 +225,7 @@ This ensures failures are immediately visible and actionable.
 - URL-based deduplication assumes one URL per unique article  
 - HTML parsing depends on regulator website structure (can break if layout changes)  
 - FFIEC relies on Tavily search rather than direct scraping  
-- AI classification can be deterministic (manual override option is available)
+- Classification can be deterministic (manual override option is available)
 - OCC PDF extraction depends on n8n's built-in Extract From File node; scanned/image PDFs will not extract correctly
 
 These are acceptable trade-offs for a lightweight, free-tier system.
