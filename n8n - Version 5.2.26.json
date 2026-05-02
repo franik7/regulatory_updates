@@ -1658,57 +1658,6 @@
     },
     {
       "parameters": {
-        "resource": "extract",
-        "urls": [
-          "=https://www.ffiec.gov/news/press-releases/2026/pr1-05-01"
-        ],
-        "options": {}
-      },
-      "type": "@tavily/n8n-nodes-tavily.tavily",
-      "typeVersion": 1,
-      "position": [
-        -32,
-        3392
-      ],
-      "id": "bc5bcbcb-f286-45aa-a311-aed4a229579c",
-      "name": "FFIEC - Tavily Extract",
-      "retryOnFail": true,
-      "credentials": {
-        "tavilyApi": {
-          "id": "2D3bq0TUYDX0rJEi",
-          "name": "Tavily account"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "const items = $input.all();\nconst newArticles = [];\n\nfunction getUrl(item) {\n  return (\n    item.json?.results?.[0]?.url ||\n    item.json?.failed_results?.[0]?.url ||\n    ''\n  ).trim();\n}\n\nfor (const item of items) {\n  const url = getUrl(item);\n\n  if (!url) {\n    continue;\n  }\n\n  const encodedUrl = encodeURIComponent(url);\n\n  const response = await this.helpers.httpRequest({\n    method: 'GET',\n    url: `https://gpdzacoeobzmmytfeegf.supabase.co/rest/v1/items?select=url&url=eq.${encodedUrl}`,\n    headers: {\n      apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwZHphY29lb2J6bW15dGZlZWdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3ODkyNjYsImV4cCI6MjA5MDM2NTI2Nn0.wrYb0rLuGqHV8wDjm7tfpzJFL02wVYY-Cnz_dUF4NjU',\n      Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwZHphY29lb2J6bW15dGZlZWdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3ODkyNjYsImV4cCI6MjA5MDM2NTI2Nn0.wrYb0rLuGqHV8wDjm7tfpzJFL02wVYY-Cnz_dUF4NjU'\n    }\n  });\n\n  const exists = Array.isArray(response) && response.length > 0;\n\n  if (!exists) {\n    newArticles.push({\n      json: {\n        ...item.json,\n        url\n      }\n    });\n  }\n}\n\nreturn newArticles;\n\n\n\n\n\n\n\n\n\n\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        176,
-        3392
-      ],
-      "id": "d66bec7b-2daa-4807-b254-09c2d4b890d0",
-      "name": "FFIEC - Filter Duplicates"
-    },
-    {
-      "parameters": {
-        "jsCode": "function cleanText(text) {\n  return String(text || '')\n    .replace(/\\r/g, '\\n')\n    .replace(/[ \\t]+\\n/g, '\\n')\n    .replace(/\\n[ \\t]+/g, '\\n')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n}\n\nfunction stripMarkdownArtifacts(text) {\n  return String(text || '')\n    // images like ![](...)\n    .replace(/!\\[[^\\]]*\\]\\([^)]+\\)/g, '')\n    // markdown links [text](url) -> text\n    .replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, '$1')\n    // angle-bracket links <https://...> -> https://...\n    .replace(/<([^>]+)>/g, '$1')\n    .trim();\n}\n\nfunction extractAnnouncementBody(raw, fallbackTitle = '') {\n  let text = cleanText(stripMarkdownArtifacts(raw));\n\n  // Find the real title area\n  const titlePatterns = [\n    new RegExp(`##\\\\s+${fallbackTitle.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}`, 'i'),\n    /^##\\s+.+$/m\n  ];\n\n  let startIdx = -1;\n  for (const pattern of titlePatterns) {\n    const match = text.match(pattern);\n    if (match) {\n      startIdx = match.index;\n      break;\n    }\n  }\n\n  if (startIdx >= 0) {\n    text = text.slice(startIdx);\n  }\n\n  // Remove generic headings at top\n  text = text\n    .replace(/^#\\s+Announcement\\s*/i, '')\n    .replace(/^##\\s+Breadcrumb\\s*/i, '')\n    .trim();\n\n  // Cut footer / boilerplate\n  const endMarkers = [\n    /\\n\\s*\\[?\\!?FFIEC logo/i,\n    /\\n\\s*An Official website of the/i,\n    /\\n\\s*\\[?\\!?Home\\]?/i,\n    /\\n\\s*Official websites use \\.gov/i,\n    /\\n\\s*Secure \\.gov websites use HTTPS/i\n  ];\n\n  let endIdx = text.length;\n  for (const marker of endMarkers) {\n    const match = text.match(marker);\n    if (match && match.index < endIdx) {\n      endIdx = match.index;\n    }\n  }\n  text = text.slice(0, endIdx).trim();\n\n  // Remove leftover UI boilerplate lines\n  const badLinePatterns = [\n    /^An official website of the United States government$/i,\n    /^Here'?s how you know$/i,\n    /^\\*\\*Official websites use \\.gov\\*\\*$/i,\n    /^A \\*\\*\\.gov\\*\\* website belongs to an official government organization in the United States\\.$/i,\n    /^\\*\\*Secure \\.gov websites use HTTPS\\*\\*$/i,\n    /^A \\*\\*lock\\*\\*.*$/i,\n    /^Lock$/i,\n    /^Locked padlock$/i,\n    /^Home$/i,\n    /^close$/i,\n    /^Search$/i,\n    /^Announcement$/i,\n    /^Breadcrumb$/i\n  ];\n\n  const lines = text\n    .split('\\n')\n    .map(line => line.trim())\n    .filter(Boolean)\n    .filter(line => !badLinePatterns.some(re => re.test(line)));\n\n  // Remove duplicate first title marker \"## Title\"\n  let article = lines.join('\\n\\n')\n    .replace(/^##\\s+/m, '')\n    .trim();\n\n  // Normalize title suffix\n  article = article.replace(/\\s+\\|\\s+FFIEC$/i, '').trim();\n\n  return cleanText(article);\n}\n\nreturn items.map(item => {\n  const result = item.json.results?.[0] || {};\n  const raw = result.raw_content || '';\n  const title = (result.title || '').replace(/\\s+\\|\\s+FFIEC$/i, '').trim();\n  const url = result.url || '';\n\n  const article_clean = extractAnnouncementBody(raw, title);\n\n  return {\n    json: {\n      title,\n      url,\n      article_clean\n    }\n  };\n});"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        384,
-        3392
-      ],
-      "id": "08b7759b-bfc5-4a22-83be-bed229fcdc3d",
-      "name": "FFIEC - Clean Article"
-    },
-    {
-      "parameters": {
         "tableId": "items",
         "fieldsUi": {
           "fieldValues": [
@@ -1718,11 +1667,11 @@
             },
             {
               "fieldId": "url",
-              "fieldValue": "={{ $('FFIEC - Clean Article Content').item.json.url }}"
+              "fieldValue": "={{ $('FFIEC - Filter Duplicates Content').item.json.url }}"
             },
             {
               "fieldId": "date_published",
-              "fieldValue": "={{ new Date($('FFIEC - Parse Search Results').item.json.published_date).toISOString().split('T')[0] }}"
+              "fieldValue": "={{ $('FFIEC - Filter Duplicates Content').item.json.published_date }}"
             },
             {
               "fieldId": "category",
@@ -1734,11 +1683,11 @@
             },
             {
               "fieldId": "full_text",
-              "fieldValue": "={{ $('FFIEC - Filter Duplicates Content').item.json.content }}"
+              "fieldValue": "={{ $('FFIEC - Clean Article Content').item.json.article_clean }}"
             },
             {
               "fieldId": "title",
-              "fieldValue": "={{ $('FFIEC - Filter Duplicates Content').item.json.title }}"
+              "fieldValue": "={{ $('FFIEC - Clean Article Content').item.json.title }}"
             }
           ]
         }
@@ -2323,16 +2272,92 @@
     },
     {
       "parameters": {
-        "jsCode": "function cleanText(text) {\n  return String(text || '')\n    .replace(/\\r/g, '\\n')\n    .replace(/[ \\t]+\\n/g, '\\n')\n    .replace(/\\n[ \\t]+/g, '\\n')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n}\n\nconst items = $input.all();\n\nreturn items.map(item => ({\n  json: {\n    title: item.json.title || '',\n    url: item.json.url || '',\n    article_clean: cleanText(item.json.content || '')\n  }\n}));"
+        "jsCode": "function extractText(html) {\n  const bodyMatch = html.match(\n    /<div class=\"field field--name-body[\\s\\S]*?<\\/div>\\s*<\\/div>\\s*<\\/article>/\n  );\n  if (bodyMatch) {\n    return bodyMatch[0]\n      .replace(/<[^>]+>/g, ' ')\n      .replace(/&nbsp;/g, ' ')\n      .replace(/&amp;/g, '&')\n      .replace(/\\s{2,}/g, ' ')\n      .trim();\n  }\n  return html\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&nbsp;/g, ' ')\n    .replace(/\\s{2,}/g, ' ')\n    .trim()\n    .slice(0, 3000);\n}\n\nconst items = $input.all();\n\nreturn items.map(item => {\n  // ScrapFly puts HTML here\n  const html = item.json.result?.content || '';\n  \n  // URL comes from ScrapFly's own context/result\n  const url = (item.json.result?.url || item.json.context?.url || '').replace('http://', 'https://');\n  \n  // Title extract from HTML <title> tag\n  const titleMatch = html.match(/<title>([^<]+)<\\/title>/);\n  const title = titleMatch \n    ? titleMatch[1].replace(/\\s*\\|\\s*FFIEC$/, '').trim()\n    : '';\n\n  return {\n    json: {\n      title,\n      url,\n      article_clean: extractText(html)\n    }\n  };\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        272,
+        416,
         3696
       ],
       "id": "a41d345e-4a05-4fd3-9a5c-633e80a03062",
       "name": "FFIEC - Clean Article Content"
+    },
+    {
+      "parameters": {
+        "jsCode": "function cleanText(text) {\n  return String(text || '')\n    .replace(/\\r/g, '\\n')\n    .replace(/[ \\t]+\\n/g, '\\n')\n    .replace(/\\n[ \\t]+/g, '\\n')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n}\n\nfunction stripMarkdownArtifacts(text) {\n  return String(text || '')\n    // images like ![](...)\n    .replace(/!\\[[^\\]]*\\]\\([^)]+\\)/g, '')\n    // markdown links [text](url) -> text\n    .replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, '$1')\n    // angle-bracket links <https://...> -> https://...\n    .replace(/<([^>]+)>/g, '$1')\n    .trim();\n}\n\nfunction extractAnnouncementBody(raw, fallbackTitle = '') {\n  let text = cleanText(stripMarkdownArtifacts(raw));\n\n  // Find the real title area\n  const titlePatterns = [\n    new RegExp(`##\\\\s+${fallbackTitle.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}`, 'i'),\n    /^##\\s+.+$/m\n  ];\n\n  let startIdx = -1;\n  for (const pattern of titlePatterns) {\n    const match = text.match(pattern);\n    if (match) {\n      startIdx = match.index;\n      break;\n    }\n  }\n\n  if (startIdx >= 0) {\n    text = text.slice(startIdx);\n  }\n\n  // Remove generic headings at top\n  text = text\n    .replace(/^#\\s+Announcement\\s*/i, '')\n    .replace(/^##\\s+Breadcrumb\\s*/i, '')\n    .trim();\n\n  // Cut footer / boilerplate\n  const endMarkers = [\n    /\\n\\s*\\[?\\!?FFIEC logo/i,\n    /\\n\\s*An Official website of the/i,\n    /\\n\\s*\\[?\\!?Home\\]?/i,\n    /\\n\\s*Official websites use \\.gov/i,\n    /\\n\\s*Secure \\.gov websites use HTTPS/i\n  ];\n\n  let endIdx = text.length;\n  for (const marker of endMarkers) {\n    const match = text.match(marker);\n    if (match && match.index < endIdx) {\n      endIdx = match.index;\n    }\n  }\n  text = text.slice(0, endIdx).trim();\n\n  // Remove leftover UI boilerplate lines\n  const badLinePatterns = [\n    /^An official website of the United States government$/i,\n    /^Here'?s how you know$/i,\n    /^\\*\\*Official websites use \\.gov\\*\\*$/i,\n    /^A \\*\\*\\.gov\\*\\* website belongs to an official government organization in the United States\\.$/i,\n    /^\\*\\*Secure \\.gov websites use HTTPS\\*\\*$/i,\n    /^A \\*\\*lock\\*\\*.*$/i,\n    /^Lock$/i,\n    /^Locked padlock$/i,\n    /^Home$/i,\n    /^close$/i,\n    /^Search$/i,\n    /^Announcement$/i,\n    /^Breadcrumb$/i\n  ];\n\n  const lines = text\n    .split('\\n')\n    .map(line => line.trim())\n    .filter(Boolean)\n    .filter(line => !badLinePatterns.some(re => re.test(line)));\n\n  // Remove duplicate first title marker \"## Title\"\n  let article = lines.join('\\n\\n')\n    .replace(/^##\\s+/m, '')\n    .trim();\n\n  // Normalize title suffix\n  article = article.replace(/\\s+\\|\\s+FFIEC$/i, '').trim();\n\n  return cleanText(article);\n}\n\nreturn items.map(item => {\n  const result = item.json.results?.[0] || {};\n  const raw = result.raw_content || '';\n  const title = (result.title || '').replace(/\\s+\\|\\s+FFIEC$/i, '').trim();\n  const url = result.url || '';\n\n  const article_clean = extractAnnouncementBody(raw, title);\n\n  return {\n    json: {\n      title,\n      url,\n      article_clean\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        3328
+      ],
+      "id": "08b7759b-bfc5-4a22-83be-bed229fcdc3d",
+      "name": "FFIEC - Clean Article",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst newArticles = [];\n\nfunction getUrl(item) {\n  return (\n    item.json?.results?.[0]?.url ||\n    item.json?.failed_results?.[0]?.url ||\n    ''\n  ).trim();\n}\n\nfor (const item of items) {\n  const url = getUrl(item);\n\n  if (!url) {\n    continue;\n  }\n\n  const encodedUrl = encodeURIComponent(url);\n\n  const response = await this.helpers.httpRequest({\n    method: 'GET',\n    url: `https://gpdzacoeobzmmytfeegf.supabase.co/rest/v1/items?select=url&url=eq.${encodedUrl}`,\n    headers: {\n      apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwZHphY29lb2J6bW15dGZlZWdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3ODkyNjYsImV4cCI6MjA5MDM2NTI2Nn0.wrYb0rLuGqHV8wDjm7tfpzJFL02wVYY-Cnz_dUF4NjU',\n      Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwZHphY29lb2J6bW15dGZlZWdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3ODkyNjYsImV4cCI6MjA5MDM2NTI2Nn0.wrYb0rLuGqHV8wDjm7tfpzJFL02wVYY-Cnz_dUF4NjU'\n    }\n  });\n\n  const exists = Array.isArray(response) && response.length > 0;\n\n  if (!exists) {\n    newArticles.push({\n      json: {\n        ...item.json,\n        url\n      }\n    });\n  }\n}\n\nreturn newArticles;\n\n\n\n\n\n\n\n\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        3328
+      ],
+      "id": "d66bec7b-2daa-4807-b254-09c2d4b890d0",
+      "name": "FFIEC - Filter Duplicates",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "resource": "extract",
+        "urls": [
+          "={{ $json.url }}"
+        ],
+        "options": {
+          "format": "text"
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        3328
+      ],
+      "id": "bc5bcbcb-f286-45aa-a311-aed4a229579c",
+      "name": "FFIEC - Tavily Extract",
+      "retryOnFail": true,
+      "credentials": {
+        "tavilyApi": {
+          "id": "2D3bq0TUYDX0rJEi",
+          "name": "Tavily account"
+        }
+      },
+      "disabled": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-scrapfly.Scrapfly",
+      "typeVersion": 1,
+      "position": [
+        240,
+        3696
+      ],
+      "id": "8fd806f1-2f7d-4c1d-93d3-6355be801233",
+      "name": "FFIEC - Scrape Web Page by URL",
+      "credentials": {
+        "ScrapflyApi": {
+          "id": "POZa2GfKbCbP13rT",
+          "name": "ScrapflyApi account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -3225,39 +3250,6 @@
         ]
       ]
     },
-    "FFIEC - Tavily Extract": {
-      "main": [
-        [
-          {
-            "node": "FFIEC - Filter Duplicates",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "FFIEC - Filter Duplicates": {
-      "main": [
-        [
-          {
-            "node": "FFIEC - Clean Article",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "FFIEC - Clean Article": {
-      "main": [
-        [
-          {
-            "node": "AI Agent2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "FDIC Speeches - Validation": {
       "main": [
         [
@@ -3619,7 +3611,7 @@
       "main": [
         [
           {
-            "node": "FFIEC - Clean Article Content",
+            "node": "FFIEC - Scrape Web Page by URL",
             "type": "main",
             "index": 0
           }
@@ -3636,6 +3628,44 @@
           }
         ]
       ]
+    },
+    "FFIEC - Clean Article": {
+      "main": [
+        []
+      ]
+    },
+    "FFIEC - Filter Duplicates": {
+      "main": [
+        [
+          {
+            "node": "FFIEC - Clean Article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FFIEC - Tavily Extract": {
+      "main": [
+        [
+          {
+            "node": "FFIEC - Filter Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FFIEC - Scrape Web Page by URL": {
+      "main": [
+        [
+          {
+            "node": "FFIEC - Clean Article Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -3647,7 +3677,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "fc3ae0ee-bcbf-40e7-92fd-29e7c0cf411a",
+  "versionId": "092c6db2-217d-43a8-99a0-9ee9ee33cfba",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ab0d433b366dd6c59882c0e6bb7e89c6615872bc4f1bb170e0335001991f53bb"
